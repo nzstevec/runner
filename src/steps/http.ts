@@ -15,6 +15,7 @@ import crypto from 'node:crypto'
 import { Agent } from 'node:https'
 import path from 'node:path'
 import { tryFile, StepFile } from './../utils/files'
+import { applyCaptureUpdates } from './../utils/capture-update'
 import { CapturesStorage, getCookie } from './../utils/runner'
 import {
   HTTPCertificate,
@@ -113,6 +114,11 @@ export type HTTPStepCapture = {
   cookie?: string
   regex?: string
   body?: boolean
+  update?: HTTPStepCaptureUpdate
+}
+
+export type HTTPStepCaptureUpdate = {
+  [path: string]: any
 }
 
 export type HTTPStepCheck = {
@@ -439,12 +445,16 @@ export default async function (
       const capture = params.captures[name]
 
       if (capture.jsonpath) {
+        let captureValue: any
         try {
           const json = JSON.parse(body)
-          captures[name] = JSONPath({ path: capture.jsonpath, json, wrap: false })
+          captureValue = JSONPath({ path: capture.jsonpath, json, wrap: false })
         } catch {
           captures[name] = undefined
+          continue
         }
+
+        captures[name] = capture.update ? applyCaptureUpdates(captureValue, capture.update) : captureValue
       }
 
       if (capture.xpath) {

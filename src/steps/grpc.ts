@@ -10,6 +10,7 @@ import {
   StepCheckMatcher,
   StepCheckPerformance,
 } from '..'
+import { applyCaptureUpdates } from './../utils/capture-update'
 import { CapturesStorage } from './../utils/runner'
 import { TLSCertificate, getTLSCertificate } from './../utils/auth'
 import { Credential } from './../utils/auth'
@@ -39,6 +40,11 @@ export type gRPCStepCaptures = {
 
 export type gRPCStepCapture = {
   jsonpath?: string
+  update?: gRPCStepCaptureUpdate
+}
+
+export type gRPCStepCaptureUpdate = {
+  [path: string]: any
 }
 
 export type gRPCStepCheck = {
@@ -149,7 +155,8 @@ export default async function (
     for (const name in params.captures) {
       const capture = params.captures[name]
       if (capture.jsonpath) {
-        captures[name] = JSONPath({ path: capture.jsonpath, json: data })[0]
+        const captureValue = JSONPath({ path: capture.jsonpath, json: data })[0]
+        captures[name] = capture.update ? applyCaptureUpdates(captureValue, capture.update) : captureValue
       }
     }
   }
