@@ -1,6 +1,6 @@
 {
-  "name": "@stepci/runner",
-  "version": "2.0.7",
+  "name": "@steve.clogic/runner",
+  "version": "2.0.7-steve.0",
   "description": "Step CI Runner",
   "main": "dist/index.js",
   "scripts": {
@@ -11,7 +11,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/StepCI/runner.git"
+    "url": "git+https://github.com/nzstevec/runner.git"
   },
   "keywords": [
     "http",
@@ -22,9 +22,12 @@
   "author": "Mish Ushakov <mish@stepci.com>",
   "license": "MPL-2.0",
   "bugs": {
-    "url": "https://github.com/StepCI/runner/issues"
+    "url": "https://github.com/nzstevec/runner/issues"
   },
-  "homepage": "https://github.com/StepCI/runner#readme",
+  "homepage": "https://github.com/nzstevec/runner#readme",
+  "publishConfig": {
+    "access": "public"
+  },
   "dependencies": {
     "@apidevtools/json-schema-ref-parser": "9.1.0",
     "@fast-csv/parse": "^4.3.6",
