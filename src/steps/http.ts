@@ -53,7 +53,7 @@ export type HTTPStep = {
   body?: string | StepFile
   form?: HTTPStepForm
   formData?: HTTPStepMultiPartForm
-  json?: object
+  json?: any
   graphql?: HTTPStepGraphQL
   trpc?: HTTPStepTRPC
 } & HTTPStepBase
@@ -216,13 +216,16 @@ export default async function (
   }
 
   //  JSON
-  if (params.json) {
+  if (params.json !== undefined && params.json !== null) {
     if (!params.headers) params.headers = {}
     if (!params.headers['Content-Type']) {
       params.headers['Content-Type'] = 'application/json'
     }
-
-    requestBody = JSON.stringify(params.json)
+    try {
+      requestBody = JSON.stringify(params.json)
+    } catch (err) {
+      throw new Error(`json field could not be serialised to JSON: ${(err as Error).message}`)
+    }
   }
 
   // GraphQL

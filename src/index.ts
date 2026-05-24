@@ -25,6 +25,7 @@ import runTRPCStep, { tRPCStep } from './steps/trpc'
 import runGraphQLStep, { GraphQLStep } from './steps/graphql'
 import parseDuration from 'parse-duration'
 import { addCustomSchemas } from './utils/schema'
+import { resolvePureTemplates } from './utils/template'
 
 export type Workflow = {
   version: string
@@ -377,12 +378,14 @@ async function runStep (previous: StepResult | undefined, step: Step, id: string
     stepResult.errorMessage = 'Step was skipped because the condition was unmet'
   } else {
     try {
-      step = renderObject(step, {
+      const templateContext = {
         captures,
         env: { ...env, ...test.env },
         secrets: options?.secrets,
         testdata: testData
-      })
+      }
+      step = resolvePureTemplates(step, templateContext)
+      step = renderObject(step, templateContext)
 
       if (step.http) {
         runResult = await runHTTPStep(step.http, captures, cookies, schemaValidator, options, config)
