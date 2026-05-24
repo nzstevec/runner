@@ -76,6 +76,7 @@ export type WorkflowOptions = {
   ee?: EventEmitter
   env?: WorkflowEnv
   concurrency?: number
+  tests?: string
 }
 
 type WorkflowOptionsSecrets = {
@@ -110,6 +111,7 @@ export type Tests = {
 export type Step = {
   id?: string
   name?: string
+  log?: string
   retries?: {
     count: number
     interval?: string | number
@@ -250,7 +252,16 @@ export async function run(workflow: Workflow, options?: WorkflowOptions): Promis
     }
   }
 
-  const concurrency = options?.concurrency || workflow.config?.concurrency || Object.keys(workflow.tests).length
+  let testsToRun = workflow.tests
+  if (options?.tests) {
+    if (!workflow.tests[options.tests]) {
+      const available = Object.keys(workflow.tests)
+      throw new Error(`Test '${options.tests}' was not found. Available tests: ${available.join(', ')}`)
+    }
+    testsToRun = { [options.tests]: workflow.tests[options.tests] }
+  }
+
+  const concurrency = options?.concurrency || workflow.config?.concurrency || Object.keys(testsToRun).length
   const limit = pLimit(concurrency <= 0 ? 1 : concurrency)
 
   const testResults: TestResult[] = []
@@ -264,7 +275,7 @@ export async function run(workflow: Workflow, options?: WorkflowOptions): Promis
 
   // Run `tests` section
   const input: Promise<TestResult>[] = []
-  Object.entries(workflow.tests).map(([id, test]) => input.push(limit(() => runTest(id, test, schemaValidator, options, workflow.config, env, { ...captures }))))
+  Object.entries(testsToRun).map(([id, test]) => input.push(limit(() => runTest(id, test, schemaValidator, options, workflow.config, env, { ...captures }))))
   testResults.push(...await Promise.all(input))
 
   // Run `after` section
@@ -386,6 +397,15 @@ async function runStep (previous: StepResult | undefined, step: Step, id: string
       }
       step = resolvePureTemplates(step, templateContext)
       step = renderObject(step, templateContext)
+
+      if (step.log) {
+        options?.ee?.emit('step:log', {
+          testId: id,
+          stepId: step.id,
+          stepName: step.name,
+          message: step.log,
+        })
+      }
 
       if (step.http) {
         runResult = await runHTTPStep(step.http, captures, cookies, schemaValidator, options, config)

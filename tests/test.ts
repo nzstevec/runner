@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import http from 'node:http'
 import { AddressInfo } from 'node:net'
+import { EventEmitter } from 'node:events'
 import { runFromFile, runFromYAML } from '../src/index'
 import { isPureTemplate, resolvePureTemplates } from '../src/utils/template'
 
@@ -491,6 +492,69 @@ tests:
   })
 }
 
+async function testRunSingleNamedTest() {
+  const workflow = `
+version: "1.1"
+name: Test Selector
+tests:
+  alpha:
+    steps:
+      - name: alpha-step
+        delay: 1ms
+  beta:
+    steps:
+      - name: beta-step
+        delay: 1ms
+`
+
+  const { result } = await runFromYAML(workflow, { tests: 'beta' })
+  assert.equal(result.tests.length, 1)
+  assert.equal(result.tests[0].id, 'beta')
+  assert.equal(result.passed, true)
+}
+
+async function testRunMissingNamedTestFails() {
+  const workflow = `
+version: "1.1"
+name: Missing Selector
+tests:
+  alpha:
+    steps:
+      - name: alpha-step
+        delay: 1ms
+`
+
+  await assert.rejects(
+    async () => runFromYAML(workflow, { tests: 'does-not-exist' }),
+    /was not found/i
+  )
+}
+
+async function testStepLogEmitsResolvedMessage() {
+  const ee = new EventEmitter()
+  const emitted: string[] = []
+  ee.on('step:log', (payload: any) => {
+    emitted.push(payload.message)
+  })
+
+  const workflow = `
+version: "1.1"
+name: Step Log
+env:
+  user: ada
+tests:
+  example:
+    steps:
+      - name: emit-log
+        log: hello \${{env.user}}
+        delay: 1ms
+`
+
+  const { result } = await runFromYAML(workflow, { ee })
+  assert.equal(result.passed, true)
+  assert.deepEqual(emitted, ['hello ada'])
+}
+
 async function main() {
   testIsPureTemplate()
   testResolvePureTemplates()
@@ -505,6 +569,9 @@ async function main() {
   await testJsonArrayPassthrough()
   await testMixedContentTemplateUnchanged()
   await testUndefinedCaptureInJsonFails()
+  await testRunSingleNamedTest()
+  await testRunMissingNamedTestFails()
+  await testStepLogEmitsResolvedMessage()
 }
 
 main().catch((error) => {
