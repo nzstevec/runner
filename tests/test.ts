@@ -513,6 +513,28 @@ tests:
   assert.equal(result.passed, true)
 }
 
+async function testRunWithoutNamedFilterRunsAllTests() {
+  const workflow = `
+version: "1.1"
+name: No Selector
+tests:
+  alpha:
+    steps:
+      - name: alpha-step
+        delay: 1ms
+  beta:
+    steps:
+      - name: beta-step
+        delay: 1ms
+`
+
+  const { result } = await runFromYAML(workflow)
+  assert.equal(result.tests.length, 2)
+  assert.equal(result.tests.some(test => test.id === 'alpha'), true)
+  assert.equal(result.tests.some(test => test.id === 'beta'), true)
+  assert.equal(result.passed, true)
+}
+
 async function testRunMissingNamedTestFails() {
   const workflow = `
 version: "1.1"
@@ -569,6 +591,7 @@ async function main() {
   await testJsonArrayPassthrough()
   await testMixedContentTemplateUnchanged()
   await testUndefinedCaptureInJsonFails()
+  await testRunWithoutNamedFilterRunsAllTests()
   await testRunSingleNamedTest()
   await testRunMissingNamedTestFails()
   await testStepLogEmitsResolvedMessage()
