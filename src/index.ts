@@ -453,7 +453,7 @@ async function runStep (previous: StepResult | undefined, step: Step, id: string
   stepResult.bytesSent = runResult?.request?.size || 0
   stepResult.bytesReceived = runResult?.response?.size || 0
   stepResult.duration = Date.now() - stepResult.timestamp.valueOf()
-  stepResult.captures = Object.keys(captures).length > 0 ? captures : undefined
+  stepResult.captures = Object.keys(captures).length > 0 ? { ...captures } : undefined
   stepResult.cookies = Object.keys(cookies.toJSON().cookies).length > 0 ? cookies.toJSON().cookies : undefined
   return stepResult
 }
